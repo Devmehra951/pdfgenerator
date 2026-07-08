@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A4 Portrait Employee Report Generator</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --ink: #1f2937;
+      --muted: #64748b;
+      --brand: #123a63;
+      --brand-light: #e8f0f8;
+      --panel: #ffffff;
+      --border: #d7dee8;
+      --bg: #f4f7fb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(135deg, #eef4fb 0%, #f8fafc 55%, #eaf0f7 100%);
+    }
+
+    .page-shell {
+      width: min(960px, calc(100% - 32px));
+      margin: 40px auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 32px;
+      background: var(--brand);
+      color: #fff;
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .logo-preview {
+      width: 72px;
+      height: 72px;
+      border: 2px solid rgba(255,255,255,0.75);
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      background: rgba(255,255,255,0.12);
+    }
+
+    h1 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 34px); }
+    .hero p { margin: 0; color: #dbeafe; line-height: 1.55; }
+
+    .content { padding: 32px; }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fbfdff;
+    }
+
+    .card strong { display: block; margin-bottom: 8px; color: var(--brand); }
+    .card span { color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding-top: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 22px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(18, 58, 99, 0.22);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    button:hover { background: #0f3154; box-shadow: 0 14px 28px rgba(18, 58, 99, 0.28); transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    .note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 640px) {
+      .page-shell { margin: 16px auto; width: calc(100% - 20px); }
+      .hero { grid-template-columns: 1fr; padding: 24px; }
+      .content { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div class="logo-preview">LOGO</div>
+      <div>
+        <h1>Professional A4 Portrait PDF Report</h1>
+        <p>Generates a multi-page government/corporate style employee report using jQuery, jsPDF, and jsPDF-AutoTable with organized A4 portrait table sections.</p>
+      </div>
+    </section>
+
+    <section class="content">
+      <div class="details">
+        <div class="card"><strong>Paper & Margins</strong><span>A4 portrait, 210 × 297 mm, with 15 mm margins on all sides.</span></div>
+        <div class="card"><strong>Dataset</strong><span>100 realistic Indian employee records generated programmatically in JavaScript.</span></div>
+        <div class="card"><strong>Layout</strong><span>Wide data is split into three readable portrait sections instead of shrinking columns.</span></div>
+      </div>
+
+      <div class="actions">
+        <button id="generatePdf" type="button">Generate PDF</button>
+        <span class="note">The report will automatically download when generated.</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    $(function () {
+      const { jsPDF } = window.jspdf;
+
+      const reportInfo = {
+        companyName: 'National Corporate Services Pvt. Ltd.',
+        reportTitle: 'Employee Master Information Report',
+        reportNumber: 'NCS/HR/EMP/2026-07',
+        preparedBy: 'Human Resources Department'
+      };
+
+      const firstNames = ['Aarav', 'Vivaan', 'Aditya', 'Arjun', 'Sai', 'Reyansh', 'Ayaan', 'Krishna', 'Ishaan', 'Shaurya', 'Ananya', 'Diya', 'Isha', 'Kavya', 'Meera', 'Saanvi', 'Aadhya', 'Riya', 'Nisha', 'Priya', 'Rahul', 'Rohan', 'Amit', 'Vikram', 'Suresh', 'Neha', 'Pooja', 'Sneha', 'Ankit', 'Karan'];
+      const lastNames = ['Sharma', 'Verma', 'Patel', 'Gupta', 'Reddy', 'Iyer', 'Nair', 'Khan', 'Singh', 'Mehta', 'Joshi', 'Chopra', 'Das', 'Rao', 'Mishra', 'Kulkarni', 'Bose', 'Pillai', 'Malhotra', 'Agarwal'];
+      const departments = ['Administration', 'Finance', 'Human Resources', 'Information Technology', 'Operations', 'Procurement', 'Sales', 'Marketing', 'Legal', 'Customer Support'];
+      const designations = ['Assistant Manager', 'Executive', 'Senior Executive', 'Team Lead', 'Analyst', 'Coordinator', 'Manager', 'Officer', 'Consultant', 'Associate'];
+      const cities = ['Mumbai', 'Delhi', 'Bengaluru', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kochi', 'Indore', 'Chandigarh', 'Nagpur', 'Surat'];
+      const statuses = ['Active', 'Probation', 'On Leave', 'Contract', 'Inactive'];
+
+      function pad(value, width) {
+        return String(value).padStart(width, '0');
+      }
+
+      function randomFrom(list, index, multiplier) {
+        return list[(index * multiplier + index) % list.length];
+      }
+
+      function formatCurrency(amount) {
+        return 'INR ' + amount.toLocaleString('en-IN');
+      }
+
+      function generateEmployees(count) {
+        const employees = [];
+        for (let i = 1; i <= count; i++) {
+          const firstName = randomFrom(firstNames, i, 7);
+          const lastName = randomFrom(lastNames, i, 5);
+          const department = randomFrom(departments, i, 3);
+          const city = randomFrom(cities, i, 4);
+          const gender = ['Male', 'Female'][i % 2];
+          const salary = 320000 + ((i * 37450) % 1450000);
+          const year = 2016 + (i % 10);
+          const month = pad(((i * 7) % 12) + 1, 2);
+          const day = pad(((i * 11) % 27) + 1, 2);
+          const cleanName = `${firstName}.${lastName}`.toLowerCase();
+
+          employees.push({
+            id: `EMP-${pad(i, 4)}`,
+            name: `${firstName} ${lastName}`,
+            department,
+            designation: randomFrom(designations, i, 2),
+            gender,
+            age: 22 + ((i * 3) % 38),
+            city,
+            phone: `+91 ${70000 + ((i * 7919) % 29999)} ${10000 + ((i * 3571) % 89999)}`,
+            email: `${cleanName}${pad(i, 2)}@ncs-example.in`,
+            salary: formatCurrency(salary),
+            joiningDate: `${day}-${month}-${year}`,
+            status: randomFrom(statuses, i, 6)
+          });
+        }
+        return employees;
+      }
+
+      function drawLogo(doc, x, y) {
+        doc.setFillColor(18, 58, 99);
+        doc.roundedRect(x, y, 22, 22, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text('LOGO', x + 11, y + 12.5, { align: 'center' });
+      }
+
+      function drawHeader(doc, pageWidth, generatedAt) {
+        const margin = 15;
+        drawLogo(doc, margin, 10);
+
+        doc.setTextColor(31, 41, 55);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text(reportInfo.companyName, margin + 28, 15);
+
+        doc.setFontSize(11);
+        doc.text(reportInfo.reportTitle, margin + 28, 21);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(79, 89, 105);
+        doc.text(`Report No: ${reportInfo.reportNumber}`, margin + 28, 27);
+        doc.text(`Prepared By: ${reportInfo.preparedBy}`, margin + 28, 32);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(18, 58, 99);
+        doc.text('Generated Date & Time', pageWidth - margin, 18, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(79, 89, 105);
+        doc.text(generatedAt, pageWidth - margin, 24, { align: 'right' });
+
+        doc.setDrawColor(18, 58, 99);
+        doc.setLineWidth(0.45);
+        doc.line(margin, 36, pageWidth - margin, 36);
+      }
+
+      function drawFooter(doc, pageWidth, pageHeight) {
+        const margin = 15;
+        const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+        doc.setDrawColor(215, 222, 232);
+        doc.setLineWidth(0.25);
+        doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Confidential', margin, pageHeight - 8);
+        doc.text('Generated automatically', pageWidth / 2, pageHeight - 8, { align: 'center' });
+        doc.text(`Page ${pageNumber} of {total_pages_count_string}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+
+      function addSection(doc, title, headers, rows, startOnNewPage, generatedAt) {
+        if (startOnNewPage) doc.addPage('a4', 'portrait');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(18, 58, 99);
+        doc.text(title, 15, 45);
+
+        doc.autoTable({
+          startY: 49,
+          head: [headers],
+          body: rows,
+          margin: { top: 42, right: 15, bottom: 19, left: 15 },
+          tableWidth: pageWidth - 30,
+          theme: 'grid',
+          styles: {
+            font: 'helvetica',
+            fontSize: 8.2,
+            cellPadding: { top: 2.3, right: 2, bottom: 2.3, left: 2 },
+            lineColor: [203, 213, 225],
+            lineWidth: 0.18,
+            overflow: 'linebreak',
+            valign: 'middle',
+            textColor: [31, 41, 55]
+          },
+          headStyles: {
+            fillColor: [18, 58, 99],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 9.2,
+            halign: 'center',
+            cellPadding: { top: 3, right: 2, bottom: 3, left: 2 }
+          },
+          bodyStyles: { halign: 'left' },
+          alternateRowStyles: { fillColor: [244, 248, 252] },
+          columnStyles: headers.reduce((styles, heading, index) => {
+            styles[index] = { cellWidth: 'auto' };
+            return styles;
+          }, {}),
+          didDrawPage: function () {
+            drawHeader(doc, pageWidth, generatedAt);
+            drawFooter(doc, pageWidth, pageHeight);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(18, 58, 99);
+            doc.text(title, 15, 45);
+          }
+        });
+      }
+
+      function generatePdf() {
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+        const generatedAt = new Date().toLocaleString('en-IN', {
+          year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+        });
+        const employees = generateEmployees(100);
+
+        const section1 = employees.map(e => [e.id, e.name, e.department, e.designation, e.gender, e.status]);
+        const section2 = employees.map(e => [e.id, String(e.age), e.city, e.phone, e.email]);
+        const section3 = employees.map(e => [e.id, e.salary, e.joiningDate, e.department, e.status]);
+
+        addSection(doc, 'Section 1: Employee Role and Status Details', ['ID', 'Name', 'Department', 'Designation', 'Gender', 'Status'], section1, false, generatedAt);
+        addSection(doc, 'Section 2: Employee Contact and Demographic Details', ['ID', 'Age', 'City', 'Phone', 'Email'], section2, true, generatedAt);
+        addSection(doc, 'Section 3: Employee Compensation and Joining Details', ['ID', 'Salary', 'Joining Date', 'Department', 'Status'], section3, true, generatedAt);
+
+        if (typeof doc.putTotalPages === 'function') {
+          doc.putTotalPages('{total_pages_count_string}');
+        }
+
+        doc.save(`Employee_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+      }
+
+      $('#generatePdf').on('click', generatePdf);
+    });
+  </script>
+</body>
+</html>
